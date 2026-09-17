@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Formulaire d'inscription</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Logos -->
+
+    <div class="logos">
+
+        <img src="./images/oneprocom.jpeg" alt="One Pro Com">
+
+        <img src="./images/eagledrone.jpeg" alt="Eagle Drone Technology">
+
+    </div>
+
+    <!-- Formulaire -->
+
+    <form action="/api/inscription" method="POST">
+
+        <h1>FORMULAIRE D'INSCRIPTION</h1>
+
+        <p class="description">
+            Veuillez remplir les informations ci-dessous afin de confirmer votre inscription.
+        </p>
+
+        <label for="nom">
+            Nom <span>*</span>
+        </label>
+
+        <input
+            type="text"
+            id="nom"
+            name="nom"
+            placeholder="Entrez votre nom"
+            required>
+
+        <label for="prenom">
+            Prénom <span>*</span>
+        </label>
+
+        <input
+            type="text"
+            id="prenom"
+            name="prenom"
+            placeholder="Entrez votre prénom"
+            required>
+
+        <label for="email">
+            Email <span>*</span>
+        </label>
+
+        <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Entrez votre adresse e-mail"
+            required>
+
+        <label for="telephone">
+            Téléphone <span>*</span>
+        </label>
+
+        <input
+            type="text"
+            id="telephone"
+            name="telephone"
+            placeholder="Entrez votre numéro"
+            required>
+
+        <label for="profession">
+            Profession <span>*</span>
+        </label>
+
+        <input
+            type="text"
+            id="profession"
+            name="profession"
+            placeholder="Entrez votre profession"
+            required>
+
+        <button type="submit">
+            S'INSCRIRE
+        </button>
+
+    </form>
+
+</div>
+
+</body>
+
+</html>
