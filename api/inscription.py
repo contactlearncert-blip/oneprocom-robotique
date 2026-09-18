@@ -23,10 +23,14 @@ from urllib.parse import parse_qs
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-def envoyer_mail(nom, prenom, email, telephone, profession):
+WHATSAPP_NUMERO = "212716639486"  # format international, sans +, sans espaces
+WHATSAPP_LIEN = f"https://wa.me/{WHATSAPP_NUMERO}"
+
+
+def envoyer_mail_inscrit(nom, prenom, email, telephone, profession):
+    """Mail envoyé à l'inscrit : sollicitation de paiement de la formation."""
     gmail_adresse = os.environ.get("GMAIL_ADRESSE", "zangatecno@gmail.com")
     gmail_mdp = os.environ.get("GMAIL_MOT_DE_PASSE", "gwmkdqptqeyrrhrh")
-    destinataire = os.environ.get("DESTINATAIRE", gmail_adresse)
 
     if not gmail_mdp:
         raise RuntimeError(
@@ -35,13 +39,66 @@ def envoyer_mail(nom, prenom, email, telephone, profession):
         )
 
     msg = EmailMessage()
+    msg["Subject"] = "Votre inscription — étape suivante : paiement de la formation"
+    msg["From"] = gmail_adresse
+    msg["To"] = email
+
+    msg.set_content(
+        f"Bonjour {prenom},\n\n"
+        "Nous vous confirmons la bonne prise en compte de votre inscription.\n\n"
+        "Pour valider définitivement votre place, merci de procéder au règlement "
+        "de la formation :\n\n"
+        "— Si vous suivez la formation en présentiel : le paiement peut être "
+        "effectué avant la séance ou directement sur place, le jour de la formation.\n\n"
+        "— Si vous suivez la formation en ligne : merci de nous rejoindre sur WhatsApp "
+        f"au {WHATSAPP_NUMERO} ({WHATSAPP_LIEN}) afin d'échanger avec nous sur les "
+        "modalités de paiement.\n\n"
+        "Nous restons à votre disposition pour toute question.\n\n"
+        "L'équipe One Pro Com"
+    )
+    msg.add_alternative(
+        f"""
+        <p>Bonjour {prenom},</p>
+        <p>Nous vous confirmons la bonne prise en compte de votre inscription.</p>
+        <p>Pour valider définitivement votre place, merci de procéder au règlement
+        de la formation :</p>
+        <ul>
+            <li><strong>En présentiel</strong> : paiement possible avant la séance
+            ou directement sur place, le jour de la formation.</li>
+            <li><strong>En ligne</strong> : merci de nous rejoindre sur WhatsApp au
+            <strong>{WHATSAPP_NUMERO}</strong> afin d'échanger sur les modalités de
+            paiement : <a href="{WHATSAPP_LIEN}">{WHATSAPP_LIEN}</a></li>
+        </ul>
+        <p>Nous restons à votre disposition pour toute question.</p>
+        <p>L'équipe One Pro Com</p>
+        """,
+        subtype="html",
+    )
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls(context=context)
+        server.login(gmail_adresse, gmail_mdp)
+        server.send_message(msg)
+
+
+def envoyer_mail_admin(nom, prenom, email, telephone, profession):
+    """Mail envoyé à l'agence : données structurées pour report dans le fichier Excel."""
+    gmail_adresse = os.environ.get("GMAIL_ADRESSE", "zangatecno@gmail.com")
+    gmail_mdp = os.environ.get("GMAIL_MOT_DE_PASSE", "gwmk dqpt qeyr rhrh")
+    admin_email = os.environ.get("ADMIN_EMAIL", gmail_adresse)
+
+    if not admin_email:
+        return  # notification admin désactivée
+
+    msg = EmailMessage()
     msg["Subject"] = f"Nouvelle inscription : {prenom} {nom}"
     msg["From"] = gmail_adresse
-    msg["To"] = destinataire
+    msg["To"] = admin_email
     msg["Reply-To"] = email
 
     msg.set_content(
-        "Nouvelle inscription :\n"
+        "Nouvelle inscription à reporter dans le fichier Excel :\n\n"
         f"Nom : {nom}\n"
         f"Prénom : {prenom}\n"
         f"Email : {email}\n"
@@ -50,7 +107,7 @@ def envoyer_mail(nom, prenom, email, telephone, profession):
     )
     msg.add_alternative(
         f"""
-        <h2>Nouvelle inscription reçue</h2>
+        <h2>Nouvelle inscription à reporter dans le fichier Excel</h2>
         <table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;">
             <tr><td><strong>Nom</strong></td><td>{nom}</td></tr>
             <tr><td><strong>Prénom</strong></td><td>{prenom}</td></tr>
@@ -67,6 +124,12 @@ def envoyer_mail(nom, prenom, email, telephone, profession):
         server.starttls(context=context)
         server.login(gmail_adresse, gmail_mdp)
         server.send_message(msg)
+
+
+def envoyer_mail(nom, prenom, email, telephone, profession):
+    """Envoie les deux mails : confirmation/paiement à l'inscrit + notification à l'agence."""
+    envoyer_mail_inscrit(nom, prenom, email, telephone, profession)
+    envoyer_mail_admin(nom, prenom, email, telephone, profession)
 
 
 def page_html(titre, corps, code=200):
