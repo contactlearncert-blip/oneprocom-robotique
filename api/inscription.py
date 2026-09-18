@@ -30,7 +30,7 @@ WHATSAPP_LIEN = f"https://wa.me/{WHATSAPP_NUMERO}"
 def envoyer_mail_inscrit(nom, prenom, email, telephone, profession):
     """Mail envoyé à l'inscrit : sollicitation de paiement de la formation."""
     gmail_adresse = os.environ.get("GMAIL_ADRESSE", "zangatecno@gmail.com")
-    gmail_mdp = os.environ.get("GMAIL_MOT_DE_PASSE", "gwmkdqptqeyrrhrh")
+    gmail_mdp = os.environ.get("GMAIL_MOT_DE_PASSE")
 
     if not gmail_mdp:
         raise RuntimeError(
@@ -85,7 +85,7 @@ def envoyer_mail_inscrit(nom, prenom, email, telephone, profession):
 def envoyer_mail_admin(nom, prenom, email, telephone, profession):
     """Mail envoyé à l'agence : données structurées pour report dans le fichier Excel."""
     gmail_adresse = os.environ.get("GMAIL_ADRESSE", "zangatecno@gmail.com")
-    gmail_mdp = os.environ.get("GMAIL_MOT_DE_PASSE", "gwmk dqpt qeyr rhrh")
+    gmail_mdp = os.environ.get("GMAIL_MOT_DE_PASSE")
     admin_email = os.environ.get("ADMIN_EMAIL", gmail_adresse)
 
     if not admin_email:
