@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscription confirmée — One Pro Com</title>
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+    }
+
+    body{
+        font-family:Arial, Helvetica, sans-serif;
+        background:linear-gradient(135deg,#eef5ff,#ffffff);
+        min-height:100vh;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        padding:40px 20px;
+    }
+
+    .carte{
+        width:100%;
+        max-width:480px;
+        background:#ffffff;
+        border-radius:20px;
+        box-shadow:0 10px 40px rgba(11,102,195,0.12);
+        padding:40px 34px;
+        text-align:center;
+        animation:apparition .5s ease-out;
+    }
+
+    @keyframes apparition{
+        from{ opacity:0; transform:translateY(12px); }
+        to{ opacity:1; transform:translateY(0); }
+    }
+
+    .icone-check{
+        width:70px;
+        height:70px;
+        margin:0 auto 20px;
+        border-radius:50%;
+        background:#e8f6ec;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+
+    .icone-check svg{
+        width:34px;
+        height:34px;
+    }
+
+    h1{
+        color:#0b3a63;
+        font-size:24px;
+        margin-bottom:12px;
+    }
+
+    .sous-titre{
+        color:#5b7a95;
+        font-size:14.5px;
+        line-height:1.55;
+        margin-bottom:26px;
+    }
+
+    .info-badge{
+        color:#4a6a86;
+        font-size:14.5px;
+        line-height:1.6;
+        background:#f6faff;
+        border:1px solid #e2ecf8;
+        border-radius:12px;
+        padding:14px 16px;
+        margin-bottom:26px;
+    }
+
+    hr{
+        border:none;
+        border-top:1px solid #e6edf5;
+        margin-bottom:26px;
+    }
+
+    h2{
+        text-align:left;
+        color:#0b3a63;
+        font-size:19px;
+        margin-bottom:8px;
+    }
+
+    .intro-paiement{
+        text-align:left;
+        color:#4a6a86;
+        font-size:14px;
+        margin-bottom:18px;
+    }
+
+    .option{
+        display:flex;
+        align-items:flex-start;
+        gap:14px;
+        text-align:left;
+        background:#f6faff;
+        border:1px solid #e2ecf8;
+        border-radius:14px;
+        padding:16px 18px;
+        margin-bottom:14px;
+    }
+
+    .badge{
+        flex-shrink:0;
+        width:28px;
+        height:28px;
+        border-radius:50%;
+        background:#0b66c3;
+        color:white;
+        font-size:14px;
+        font-weight:bold;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        margin-top:1px;
+    }
+
+    .option .badge{
+        color:white !important;
+    }
+
+    .option strong{
+        display:block;
+        color:#0b3a63;
+        font-size:14.5px;
+        margin-bottom:3px;
+    }
+
+    .option span{
+        color:#5b7a95;
+        font-size:13.5px;
+        line-height:1.5;
+    }
+
+    .btn-whatsapp{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+        width:100%;
+        padding:16px;
+        margin-top:24px;
+        background:#25D366;
+        color:white;
+        border:none;
+        border-radius:12px;
+        font-size:16px;
+        font-weight:bold;
+        text-decoration:none;
+        cursor:pointer;
+        transition:.25s;
+    }
+
+    .btn-whatsapp:hover{
+        background:#1ebe5a;
+        transform:translateY(-2px);
+    }
+
+    .btn-whatsapp svg{
+        width:22px;
+        height:22px;
+        flex-shrink:0;
+    }
+
+    .separateur-btn{
+        width:1px;
+        height:20px;
+        background:rgba(255,255,255,0.5);
+    }
+
+    @media (max-width:480px){
+        .carte{ padding:32px 22px; }
+        h1{ font-size:21px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="carte">
+
+    <div class="icone-check">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="11" stroke="#2fae5c" stroke-width="1.6"/>
+            <path d="M7 12.5L10.2 15.7L17 8.5" stroke="#2fae5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </div>
+
+    <h1>Inscription bien reçue !</h1>
+    <p class="info-badge">
+        Votre badge vient de vous être envoyé par email.<br>
+        Pensez à vérifier vos courriers indésirables (spam) si vous ne le voyez pas.
+    </p>
+
+
+    <hr>
+
+    <h2>Modalités de paiement</h2>
+    <p class="intro-paiement">Vous avez deux possibilités pour régler votre formation :</p>
+
+    <div class="option">
+        <span class="badge">1</span>
+        <div>
+            <strong>Paiement avant la formation</strong>
+            <span>Vous pouvez effectuer le paiement à l'avance afin de confirmer votre inscription.</span>
+        </div>
+    </div>
+
+    <div class="option">
+        <span class="badge">2</span>
+        <div>
+            <strong>Paiement sur place</strong>
+            <span>Vous pouvez également régler sur place, avant le début de la séance.</span>
+        </div>
+    </div>
+
+    <a id="btn-whatsapp" class="btn-whatsapp" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.06-1.33A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18a7.96 7.96 0 0 1-4.06-1.11l-.29-.17-3.02.79.81-2.94-.19-.3A7.96 7.96 0 1 1 12 20z"/>
+            <path d="M16.4 13.6c-.24-.12-1.44-.71-1.66-.79-.22-.08-.39-.12-.55.12-.16.24-.63.79-.78.95-.14.16-.29.18-.53.06-.24-.12-1.02-.38-1.95-1.2-.72-.64-1.21-1.43-1.35-1.67-.14-.24-.02-.37.11-.49.11-.11.24-.29.36-.43.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.32-.75-1.8-.2-.47-.4-.41-.55-.42h-.47c-.16 0-.42.06-.64.3-.22.24-.85.83-.85 2.02s.87 2.35.99 2.51c.12.16 1.71 2.61 4.15 3.66.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28z"/>
+        </svg>
+        <span>Nous contacter</span>
+    </a>
+
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const prenom = (params.get('prenom') || '').trim();
+    const nom = (params.get('nom') || '').trim();
+
+    const nomComplet = [prenom, nom].filter(Boolean).join(' ');
+    const messagePrerempli = nomComplet
+        ? `Bonjour, je viens de m’inscrire à la formation One Pro Com (${nomComplet}). J’aimerais échanger avec vous.`
+        : "Bonjour, je viens de m’inscrire à la formation One Pro Com. J’aimerais échanger avec vous.";
+
+    const numeroWhatsapp = "212716639486";
+    document.getElementById('btn-whatsapp').href =
+        `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(messagePrerempli)}`;
+</script>
+
+</body>
+</html>
