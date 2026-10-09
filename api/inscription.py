@@ -6,8 +6,8 @@ Version 5 : ID unique + QR code (Nom Prénom, Profession, ID) dans le mail,
   stockage des inscrits dans Upstash Redis (gratuit) pour l'espace admin.
 
 Version 4 :
-  - L'inscrit reçoit un mail reprenant les modalités de paiement + un bouton
-    WhatsApp stylé, pour confirmer son inscription.
+  - L'inscrit reçoit un mail reprenant les modalités de paiement + son QR code en PDF
+    (pièce jointe).
   - L'inscrit est aussi redirigé vers la page de confirmation (confirmation.html),
     qui affiche le même contenu, pour une action immédiate.
   - L'agence (ADMIN_EMAIL) reçoit un mail de notification structuré, pour
@@ -33,16 +33,14 @@ import ssl
 import urllib.request
 from datetime import datetime, timezone
 from email.message import EmailMessage
-from email.utils import make_msgid
 from html import escape
 from http.server import BaseHTTPRequestHandler
-from urllib.parse import parse_qs, urlencode, quote
+from urllib.parse import parse_qs, urlencode
 
 import segno
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-WHATSAPP_NUMERO = "212716639486"  # format international, sans +, sans espaces
 
 
 # ---------------------------------------------------------------------------
@@ -119,188 +117,97 @@ def contenu_qr(id_inscrit, nom, prenom, profession):
 DOSSIER_ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 
 
-def generer_badge(texte_qr, prenom, nom):
-    """Badge de l'inscrit : l'affiche de l'atelier avec son QR code posé dessus
-    et son nom en clair (aucun ID visible). Retourne les octets d'un JPEG."""
-    affiche = Image.open(os.path.join(DOSSIER_ASSETS, "affiche.jpg")).convert("RGB")
-    L, H = affiche.size
-    k = L / 822.0  # coordonnées calées sur une affiche de 822 px de large
-
-    # --- QR code, à module entier pour rester net et facile à scanner
-    qr_obj = segno.make(texte_qr, error="m", encoding="utf-8")
-    modules, _ = qr_obj.symbol_size(scale=1, border=1)
-    echelle = max(4, int(235 * k) // modules)
-    buf = io.BytesIO()
-    qr_obj.save(buf, kind="png", scale=echelle, border=1)
-    qr = Image.open(buf).convert("RGB")
-    t = qr.size[0]
-
-    # --- Nom en clair sous le QR (une ligne, sinon prénom / nom sur deux lignes)
-    marge = int(14 * k)
-    largeur_carte = t + 2 * marge
+def generer_pdf_qr(texte_qr, prenom, nom):
+    """PDF classique de l'inscrit : QR code et « SCAN ME » en dessous,
+    sans aucun autre texte. Retourne les octets d'un PDF (A5 portrait)."""
+    L, H = 874, 1240  # A5 à 150 dpi
+    bleu = (11, 58, 99)
+    page = Image.new("RGB", (L, H), (255, 255, 255))
+    d = ImageDraw.Draw(page)
     chemin_police = os.path.join(DOSSIER_ASSETS, "DejaVuSans-Bold.ttf")
-    dessin_mesure = ImageDraw.Draw(Image.new("RGB", (10, 10)))
 
     def police(taille):
         return ImageFont.truetype(chemin_police, taille)
 
-    def largeur(texte, taille):
-        return dessin_mesure.textlength(texte, font=police(taille))
+    def centre(texte, y, taille, couleur=bleu):
+        f = police(taille)
+        d.text(((L - d.textlength(texte, font=f)) / 2, y), texte, font=f, fill=couleur)
 
-    nom_complet = f"{prenom} {nom}".strip()
-    max_l = largeur_carte - 2 * int(10 * k)
-    taille = int(30 * k)
-    while taille > int(18 * k) and largeur(nom_complet, taille) > max_l:
-        taille -= 1
-    if largeur(nom_complet, taille) <= max_l:
-        lignes = [nom_complet]
-    else:
-        taille = int(24 * k)
-        lignes = [prenom, nom]
-        while taille > 12 and max(largeur(x, taille) for x in lignes) > max_l:
-            taille -= 1
-    interligne = int(taille * 1.25)
-    hauteur_nom = interligne * len(lignes)
+    # --- QR code, à module entier pour rester net et facile à scanner
+    qr_obj = segno.make(texte_qr, error="m", encoding="utf-8")
+    modules, _ = qr_obj.symbol_size(scale=1, border=1)
+    echelle = max(4, 520 // modules)
+    buf = io.BytesIO()
+    qr_obj.save(buf, kind="png", scale=echelle, border=1)
+    qr = Image.open(buf).convert("RGB")
+    t = qr.size[0]
+    hauteur_bloc = t + 25 + 46 + 12  # QR + « SCAN ME »
+    y_qr = (H - hauteur_bloc) // 2
+    page.paste(qr, ((L - t) // 2, y_qr))
 
-    hauteur_carte = marge + t + int(10 * k) + hauteur_nom + marge
-    x0, y0 = int(95 * k), int(322 * k)
+    # --- « SCAN ME » sous le QR
+    centre("SCAN ME", y_qr + t + 25, 46)
 
-    # --- Ombre douce + carte blanche aux coins arrondis
-    calque = Image.new("RGBA", affiche.size, (0, 0, 0, 0))
-    ImageDraw.Draw(calque).rounded_rectangle(
-        [x0 + 3, y0 + 6, x0 + largeur_carte + 3, y0 + hauteur_carte + 6],
-        radius=int(14 * k), fill=(11, 58, 99, 90))
-    calque = calque.filter(ImageFilter.GaussianBlur(int(9 * k)))
-    badge = Image.alpha_composite(affiche.convert("RGBA"), calque)
-    d = ImageDraw.Draw(badge)
-    d.rounded_rectangle([x0, y0, x0 + largeur_carte, y0 + hauteur_carte],
-                        radius=int(14 * k), fill=(255, 255, 255, 255))
-    badge.paste(qr, (x0 + marge, y0 + marge))
-
-    y = y0 + marge + t + int(10 * k)
-    f = police(taille)
-    for ligne in lignes:
-        l = d.textlength(ligne, font=f)
-        d.text((x0 + (largeur_carte - l) / 2, y), ligne, font=f, fill=(11, 58, 99, 255))
-        y += interligne
 
     sortie = io.BytesIO()
-    badge.convert("RGB").save(sortie, format="JPEG", quality=90, optimize=True)
+    page.save(sortie, format="PDF", resolution=150.0)
     return sortie.getvalue()
 
 
 def construire_mail_inscrit(id_inscrit, nom, prenom, email, telephone, profession):
     """
-    Mail envoyé à l'inscrit : badge (affiche + QR code Nom et Prénom, Profession, ID) +
-    modalités de paiement + bouton WhatsApp.
-
-    Note technique : les clients mail ne supportent pas la balise <button>
-    ni JavaScript. Le "bouton" est donc un lien <a> stylé en CSS inline
-    (fond coloré, padding, coins arrondis) pour ressembler à un bouton.
-    Fonctionne bien sur Gmail, Apple Mail, Outlook.com et mobile ; sur
-    Outlook Bureau (Windows), les coins arrondis peuvent être ignorés mais
-    le bouton reste cliquable normalement.
+    Mail envoyé à l'inscrit : confirmation + QR code (Nom et Prénom,
+    Profession, ID) affiché dans le mail et en pièce jointe PDF.
     """
     gmail_adresse = os.environ.get("GMAIL_ADRESSE", "oneprocom.robotique@gmail.com")
 
-    nom_complet = f"{prenom} {nom}".strip()
-    badge_jpg = generer_badge(contenu_qr(id_inscrit, nom, prenom, profession), prenom, nom)
-    badge_cid = make_msgid(domain="oneprocom.local")
-    wa_cid = make_msgid(domain="oneprocom.local")
-    with open(os.path.join(DOSSIER_ASSETS, "whatsapp.png"), "rb") as f:
-        wa_png = f.read()
-    message_whatsapp = (
-        f"Bonjour, je viens de m’inscrire à la formation One Pro Com ({nom_complet}). "
-        "J’aimerais échanger avec vous."
-    )
-    lien_whatsapp = f"https://wa.me/{WHATSAPP_NUMERO}?text={quote(message_whatsapp)}"
+    nom_affiche = f"{nom.upper()} {prenom}".strip()
+
+    # QR code en PNG, affiché directement dans le corps du mail
+    qr_obj = segno.make(contenu_qr(id_inscrit, nom, prenom, profession), error="m", encoding="utf-8")
+    buf = io.BytesIO()
+    qr_obj.save(buf, kind="png", scale=8, border=2)
+    qr_png = buf.getvalue()
 
     msg = EmailMessage()
-    msg["Subject"] = "Inscription bien reçue — votre badge"
-    msg["From"] = gmail_adresse
+    msg["Subject"] = "One Pro Com"
+    msg["From"] = f"One Pro Com <{gmail_adresse}>"
     msg["To"] = email
 
     # Version texte brut (fallback si le client mail n'affiche pas le HTML)
     msg.set_content(
-        f"Bonjour {prenom},\n\n"
-        "Inscription bien reçue !\n\n"
-        "Votre badge avec votre QR code est joint à ce mail (image badge.jpg). "
-        "Conservez-le : il vous sera demandé à l'entrée.\n\n"
-        "Modalités de paiement — vous avez deux possibilités :\n\n"
-        "1. Paiement avant la formation : vous pouvez effectuer le paiement "
-        "à l'avance afin de confirmer votre inscription.\n\n"
-        "2. Paiement sur place : vous pouvez également régler sur place, "
-        "avant le début de la séance.\n\n"
-        "Une question ? Contactez-nous sur WhatsApp :\n"
-        f"{lien_whatsapp}\n\n"
-        "L'équipe One Pro Com"
+        f"Bonjour {nom_affiche},\n\n"
+        "Votre inscription à la formation organisée par One Pro Com "
+        "en collaboration avec L Partners a bien été enregistrée.\n\n"
+        "Votre QR Code est joint à cet e-mail.\n\n"
+        "Merci de le présenter le jour de la formation.\n\n"
+        "Nous vous remercions de votre confiance.\n\n"
+        "One Pro Com\n"
+        "L Partners"
     )
 
-    # Version HTML avec le bouton, reprenant le contenu de confirmation.html
-    msg.add_alternative(
-        f"""\
+    corps_html = f"""\
 <!DOCTYPE html>
 <html>
-<body style="margin:0;padding:0;background:#eef5ff;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef5ff;padding:30px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;">
-          <tr>
-            <td style="padding:34px 30px;">
-              <h1 style="margin:0 0 12px;color:#0b3a63;font-size:22px;text-align:center;">Inscription bien reçue !</h1>
-              <img src="cid:{badge_cid[1:-1]}" alt="Votre badge" width="420" style="display:block;width:100%;max-width:420px;height:auto;margin:18px auto 8px;border-radius:12px;">
-              <p style="margin:0 0 26px;color:#8aa2b8;font-size:12px;text-align:center;">Conservez ce badge : il vous sera demandé à l'entrée.</p>
-
-              <h2 style="margin:0 0 8px;color:#0b3a63;font-size:17px;">Modalités de paiement</h2>
-              <p style="margin:0 0 16px;color:#4a6a86;font-size:14px;">Vous avez deux possibilités pour régler votre formation :</p>
-
-              <table role="presentation" width="100%" style="background:#f6faff;border:1px solid #e2ecf8;border-radius:12px;margin-bottom:12px;">
-                <tr>
-                  <td style="padding:16px 18px;color:#274b6b;font-size:14px;line-height:1.5;">
-                    <strong style="color:#0b3a63;">1. Paiement avant la formation</strong><br>
-                    Vous pouvez effectuer le paiement à l'avance afin de confirmer votre inscription.
-                  </td>
-                </tr>
-              </table>
-
-              <table role="presentation" width="100%" style="background:#f6faff;border:1px solid #e2ecf8;border-radius:12px;margin-bottom:26px;">
-                <tr>
-                  <td style="padding:16px 18px;color:#274b6b;font-size:14px;line-height:1.5;">
-                    <strong style="color:#0b3a63;">2. Paiement sur place</strong><br>
-                    Vous pouvez également régler sur place, avant le début de la séance.
-                  </td>
-                </tr>
-              </table>
-
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" bgcolor="#25D366" style="border-radius:10px;">
-                    <a href="{lien_whatsapp}"
-                       target="_blank"
-                       style="display:block;padding:15px 20px;font-size:15.5px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
-                      <img src="cid:{wa_cid[1:-1]}" alt="WhatsApp" width="22" height="22" style="vertical-align:middle;border:0;margin-right:10px;">Nous contacter
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1f2d3a;">
+  <div style="max-width:520px;padding:24px 20px;">
+    <h2 style="margin:0 0 20px;font-size:22px;color:#111;">Bonjour {escape(nom_affiche)},</h2>
+    <p style="margin:0 0 14px;font-size:15px;line-height:1.5;">Votre inscription à la formation organisée par <strong>One Pro Com</strong> en collaboration avec <strong>L Partners</strong> a bien été enregistrée.</p>
+    <p style="margin:0 0 14px;font-size:15px;line-height:1.5;">Votre QR Code est joint à cet e-mail.</p>
+    <p style="margin:0 0 28px;font-size:15px;line-height:1.5;">Merci de le présenter le jour de la formation.</p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">Nous vous remercions de votre confiance.</p>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.4;"><strong>One Pro Com</strong><br><span style="color:#888;font-weight:bold;">L Partners</span></p>
+    <img src="cid:qrcode" alt="QR Code" width="220" style="display:block;width:220px;max-width:100%;height:auto;">
+  </div>
 </body>
 </html>
-""",
-        subtype="html",
-    )
+"""
+    msg.add_alternative(corps_html, subtype="html")
+    msg.get_payload()[1].add_related(qr_png, maintype="image", subtype="png", cid="<qrcode>")
 
-    # Badge incorporé au mail (image liée, affichée dans le corps) et aussi
-    # téléchargeable comme pièce jointe.
-    partie_html = msg.get_payload()[1]
-    partie_html.add_related(badge_jpg, "image", "jpeg", cid=badge_cid, filename="badge.jpg")
-    partie_html.add_related(wa_png, "image", "png", cid=wa_cid)
+    # QR code aussi en pièce jointe PDF (à imprimer / présenter)
+    pdf_qr = generer_pdf_qr(contenu_qr(id_inscrit, nom, prenom, profession), prenom, nom)
+    msg.add_attachment(pdf_qr, maintype="application", subtype="pdf", filename="qr-code.pdf")
 
     return msg
 
@@ -427,7 +334,7 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             print("Erreur enregistrement inscrit :", repr(e))
 
-        # 2) Mail à l'inscrit (avec son badge) et notification à l'agence.
+        # 2) Mail à l'inscrit (avec son QR code en PDF) et notification à l'agence.
         try:
             envoyer_message(construire_mail_inscrit(id_inscrit, nom, prenom, email, telephone, profession))
         except Exception as e:

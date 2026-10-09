@@ -66,15 +66,19 @@
         margin-bottom:26px;
     }
 
+    .info-badge p + p{
+        margin-top:7px;
+    }
+
     .info-badge{
         color:#4a6a86;
-        font-size:14.5px;
-        line-height:1.6;
+        font-size:13px;
+        line-height:1.5;
         background:#f6faff;
         border:1px solid #e2ecf8;
         border-radius:12px;
-        padding:14px 16px;
-        margin-bottom:26px;
+        padding:12px 14px;
+        margin-bottom:22px;
     }
 
     hr{
@@ -194,11 +198,12 @@
         </svg>
     </div>
 
-    <h1>Inscription bien reçue !</h1>
-    <p class="info-badge">
-        Votre badge vient de vous être envoyé par email.<br>
-        Pensez à vérifier vos courriers indésirables (spam) si vous ne le voyez pas.
-    </p>
+    <h1>Inscription réussie !</h1>
+    <div class="info-badge">
+        <p>Un e-mail de confirmation contenant votre QR Code vient de vous être envoyé.</p>
+        <p>Notre équipe vous contactera prochainement pour vous fournir plus de détails et les prochaines étapes.</p>
+        <p>Cordialement</p>
+    </div>
 
 
     <hr>
@@ -238,6 +243,7 @@
     const nom = (params.get('nom') || '').trim();
 
     const nomComplet = [prenom, nom].filter(Boolean).join(' ');
+
     const messagePrerempli = nomComplet
         ? `Bonjour, je viens de m’inscrire à la formation One Pro Com (${nomComplet}). J’aimerais échanger avec vous.`
         : "Bonjour, je viens de m’inscrire à la formation One Pro Com. J’aimerais échanger avec vous.";
